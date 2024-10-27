@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Ti ❤️</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            touch-action: none;
+            font-family: Arial, sans-serif;
+        }
+        #game {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: none;
+        }
+        #bucket {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: transform 0.1s;
+        }
+        #bucket img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .message {
+            position: absolute;
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            white-space: nowrap;
+            animation: fall 2s linear;
+        }
+        #score {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 20px;
+        }
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .gameButton {
+            background-color: white;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(255,255,255,0.2);
+        }
+        #instructions {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 20px;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+        @keyframes fall {
+            from { top: -50px; }
+            to { top: 100vh; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) scale(2); }
+            25% { transform: translate(-53%, -50%) scale(2); }
+            75% { transform: translate(-47%, -50%) scale(2); }
+        }
+        @keyframes explode {
+            0% { transform: translate(-50%, -50%) scale(2); }
+            50% { transform: translate(-50%, -50%) scale(4); }
+            100% { transform: translate(-50%, -50%) scale(0); }
+        }
+        @keyframes catch {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        #gameOverMessage, #finalMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            font-size: 24px;
+            color: black;
+            box-shadow: 0 0 30px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <div id="instructions">
+            Ayudame a crear a la mujer perfecta <br>
+            Desliza el dedo para mover el cubo y atrapar los valores necesarios
+        </div>
+        <button id="playButton" class="gameButton">Jugar ❤️</button>
+    </div>
+    <div id="game">
+        <div id="bucket">
+            <img src="cubo.png" alt="Cubo">
+        </div>
+        <div id="score">0/10</div>
+    </div>
+    <div id="gameOverMessage">
+        ¡Oh no! Se te escapó uno...<br>
+        ¡Inténtalo de nuevo!<br>
+        <button id="restartButton" class="gameButton">Reiniciar</button>
+    </div>
+    <div id="finalMessage">
+        ¡FELICIDADES!<br>
+        ¡Acabas de crear a la mujer perfecta!<br>
+        <br>
+        Espera ... ¡te acabas de crear a ti misma !<br>
+        <br>
+        FELIZ CUMPLEAÑOS ❤️<br>
+        <button id="playAgainButton" class="gameButton">Jugar de nuevo</button>
+    </div>
+    <script>
+        const messages = [
+            "Culo inmenso",
+            "Cara angelical",
+            "Ojos que hipnotizan",
+            "Buen sentido del humor",
+            "Amor incondicional",
+            "Inteligencia",
+            "Confianza",
+            "Lealtad",
+            "Empatía",
+            "Romanticismo"
+        ];
+
+        let collected = 0;
+        const totalMessages = messages.length;
+        const bucket = document.getElementById('bucket');
+        const game = document.getElementById('game');
+        const score = document.getElementById('score');
+        let gameActive = false;
+
+        function resetGame() {
+            collected = 0;
+            score.textContent = `0/${totalMessages}`;
+            
+            // Restaurar el estilo del cubo a su posición inicial
+            bucket.style = '';
+            bucket.style.position = 'absolute';
+            bucket.style.bottom = '20px';
+            bucket.style.left = '50%';
+            bucket.style.transform = 'translateX(-50%)';
+            bucket.style.width = '60px';
+            bucket.style.height = '60px';
+            
+            document.getElementById('gameOverMessage').style.display = 'none';
+            document.getElementById('finalMessage').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'none';
+            game.style.display = 'block';
+            gameActive = true;
+            createMessage();
+        }
+
+        document.getElementById('playButton').addEventListener('click', resetGame);
+        document.getElementById('restartButton').addEventListener('click', resetGame);
+        document.getElementById('playAgainButton').addEventListener('click', resetGame);
+
+        let bucketX = window.innerWidth / 2;
+        let isDragging = false;
+
+        function updateBucketPosition(x) {
+            bucketX = Math.max(30, Math.min(x, window.innerWidth - 30));
+            bucket.style.left = bucketX + 'px';
+        }
+
+        function animateCatch() {
+            bucket.style.animation = 'catch 0.3s ease';
+            setTimeout(() => {
+                bucket.style.animation = '';
+            }, 300);
+        }
+
+        game.addEventListener('touchmove', (e) => {
+            if (gameActive) {
+                e.preventDefault();
+                updateBucketPosition(e.touches[0].clientX);
+            }
+        });
+
+        game.addEventListener('mousedown', () => isDragging = true);
+        game.addEventListener('mouseup', () => isDragging = false);
+        game.addEventListener('mousemove', (e) => {
+            if (isDragging && gameActive) {
+                updateBucketPosition(e.clientX);
+            }
+        });
+
+        function createMessage() {
+            if (!gameActive) return;
+            
+            const message = document.createElement('div');
+            message.className = 'message';
+            message.textContent = messages[collected % messages.length];
+            message.style.left = Math.random() * (window.innerWidth - 100) + 'px';
+            game.appendChild(message);
+
+            message.addEventListener('animationend', () => {
+                if (gameActive) {
+                    message.remove();
+                    gameActive = false;
+                    document.getElementById('gameOverMessage').style.display = 'block';
+                }
+            });
+
+            const checkCollision = setInterval(() => {
+                if (!gameActive) {
+                    clearInterval(checkCollision);
+                    return;
+                }
+
+                const messageRect = message.getBoundingClientRect();
+                const bucketRect = bucket.getBoundingClientRect();
+
+                if (messageRect.bottom >= bucketRect.top &&
+                    messageRect.right >= bucketRect.left &&
+                    messageRect.left <= bucketRect.right) {
+                    
+                    collected++;
+                    score.textContent = `${collected}/${totalMessages}`;
+                    message.remove();
+                    clearInterval(checkCollision);
+                    
+                    animateCatch();
+
+                    if (collected === totalMessages) {
+                        gameActive = false;
+                        endGame();
+                    } else {
+                        createMessage();
+                    }
+                }
+            }, 50);
+        }
+
+        function endGame() {
+            bucket.style.position = 'fixed';
+            bucket.style.left = '50%';
+            bucket.style.top = '50%';
+            bucket.style.transform = 'translate(-50%, -50%) scale(2)';
+            bucket.style.animation = 'shake 0.5s ease-in-out';
+            
+            setTimeout(() => {
+                bucket.style.animation = 'explode 1s forwards';
+                setTimeout(() => {
+                    document.getElementById('finalMessage').style.display = 'block';
+                }, 900);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
